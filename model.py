@@ -101,6 +101,7 @@ class DCGAN(object):
 
     inputs = self.inputs
 
+
     self.z = tf.placeholder(
       tf.float32, [None, self.z_dim], name='z')
     self.z_sum = histogram_summary("z", self.z)
@@ -182,7 +183,7 @@ class DCGAN(object):
     start_time = time.time()
     could_load, checkpoint_counter = self.load(self.checkpoint_dir)
     if could_load:
-      counter = checkpoint_counterde
+      counter = checkpoint_counter
       print(" [*] Load SUCCESS")
     else:
       print(" [!] Load failed...")
