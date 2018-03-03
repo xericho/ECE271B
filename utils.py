@@ -32,6 +32,9 @@ def get_image(image_path, input_height, input_width,
 def save_images(images, size, image_path):
   return imsave(inverse_transform(images), size, image_path)
 
+def save_image(images, image_path):
+  return scipy.misc.imsave(image_path, inverse_transform(images)[0])
+
 def imread(path, grayscale = False):
   if (grayscale):
     return scipy.misc.imread(path, flatten = True).astype(np.float)
@@ -61,6 +64,9 @@ def merge(images, size):
   else:
     raise ValueError('in merge(images,size) images parameter '
                      'must have dimensions: HxW or HxWx3 or HxWx4')
+
+def imsaveONE(images, size, path):
+  return scipy.misc.imsave(path, image[0])
 
 def imsave(images, size, path):
   image = np.squeeze(merge(images, size))
@@ -171,10 +177,13 @@ def make_gif(images, fname, duration=2, true_image=False):
 
 def visualize(sess, dcgan, config, option):
   image_frame_dim = int(math.ceil(config.batch_size**.5))
+  ### OPTION 0
   if option == 0:
     z_sample = np.random.uniform(-0.5, 0.5, size=(config.batch_size, dcgan.z_dim))
     samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
     save_images(samples, [image_frame_dim, image_frame_dim], './samples/test_%s.png' % strftime("%Y-%m-%d-%H-%M-%S", gmtime()))
+
+  ### OPTION 1
   elif option == 1:
     values = np.arange(0, 1, 1./config.batch_size)
     for idx in xrange(dcgan.z_dim):
@@ -193,6 +202,8 @@ def visualize(sess, dcgan, config, option):
         samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
 
       save_images(samples, [image_frame_dim, image_frame_dim], './samples/test_arange_%s.png' % (idx))
+
+  ### OPTION 2
   elif option == 2:
     values = np.arange(0, 1, 1./config.batch_size)
     for idx in [random.randint(0, dcgan.z_dim - 1) for _ in xrange(dcgan.z_dim)]:
@@ -216,6 +227,8 @@ def visualize(sess, dcgan, config, option):
         make_gif(samples, './samples/test_gif_%s.gif' % (idx))
       except:
         save_images(samples, [image_frame_dim, image_frame_dim], './samples/test_%s.png' % strftime("%Y-%m-%d-%H-%M-%S", gmtime()))
+
+  ### OPTION 3 - Create separate GIFs
   elif option == 3:
     values = np.arange(0, 1, 1./config.batch_size)
     for idx in xrange(dcgan.z_dim):
@@ -226,6 +239,8 @@ def visualize(sess, dcgan, config, option):
 
       samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
       make_gif(samples, './samples/test_gif_%s.gif' % (idx))
+
+  ### OPTION 4 - Merge all into one GIF
   elif option == 4:
     image_set = []
     values = np.arange(0, 1, 1./config.batch_size)
@@ -233,15 +248,21 @@ def visualize(sess, dcgan, config, option):
     for idx in xrange(dcgan.z_dim):
       print(" [*] %d" % idx)
       z_sample = np.zeros([config.batch_size, dcgan.z_dim])
-      for kdx, z in enumerate(z_sample): z[idx] = values[kdx]
+      for kdx, z in enumerate(z_sample): 
+        z[idx] = values[kdx]
 
       image_set.append(sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample}))
       make_gif(image_set[-1], './samples/test_gif_%s.gif' % (idx))
 
     new_image_set = [merge(np.array([images[idx] for images in image_set]), [10, 10]) \
-        for idx in range(64) + range(63, -1, -1)]
+        for idx in list(range(64)) + list(range(63, -1, -1))]
     make_gif(new_image_set, './samples/test_gif_merged.gif', duration=8)
 
+  ### OPTION 5 - Output only one image
+  elif option == 5:
+    z_sample = np.random.uniform(-0.5, 0.5, size=(config.batch_size, dcgan.z_dim))
+    samples = sess.run(dcgan.sampler, feed_dict={dcgan.z: z_sample})
+    save_image(samples, './samples/test_%s.png' % strftime("%Y-%m-%d-%H-%M-%S", gmtime()))
 
 def image_manifold_size(num_images):
   manifold_h = int(np.floor(np.sqrt(num_images)))
